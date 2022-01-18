@@ -1,0 +1,31 @@
+name: 'DeployNow Configuration Templating'
+description: 'Fill templates of configuration files before deployment based on the golang template engine'
+inputs:
+  template-directory:
+    description: 'The directory to search for template files'
+    required: false
+    default: '.deploy-now'
+  template-extension:
+    description: 'The file extension which identifies template files'
+    required: false
+    default: '.template'
+  output-directory:
+    description: 'The directory where the processed templates will be written to'
+    required: false
+    default: './'
+  env-var-prefix:
+    description: 'A prefix to identify environment variables which will be used to fill the templates'
+    required: false
+    default: 'data.'
+runs:
+  using: 'docker'
+  image: 'Dockerfile'
+  args:
+    - '--input'
+    - ${{ inputs.template-directory }}
+    - '--template-extension'
+    - ${{ inputs.template-extension }}
+    - '--output'
+    - ${{ inputs.output-directory }}
+    - '--env-var-prefix'
+    - ${{ inputs.env-var-prefix }}
