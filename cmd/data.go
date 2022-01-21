@@ -1,4 +1,4 @@
-package action
+package cmd
 
 import (
 	"gopkg.in/yaml.v3"

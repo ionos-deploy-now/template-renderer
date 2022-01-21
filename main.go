@@ -1,9 +1,9 @@
 package main
 
 import (
-	"deploy-now-configuration-template-action/action"
+	"deploy-now-configuration-template-action/cmd"
 )
 
 func main() {
-	action.Execute()
+	cmd.Execute()
 }
