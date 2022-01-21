@@ -20,7 +20,7 @@ var rootCmd = &cobra.Command{
 		templates := LoadTemplateFiles(templateDir, templateExtension)
 		data := ParseInputData(inputData)
 		for _, template := range templates {
-			template.Fill(data, outputDir, copyPermissions)
+			template.Render(data, outputDir, copyPermissions)
 		}
 	},
 }

@@ -51,7 +51,7 @@ func LoadTemplateFiles(templateDir string, templateExtension string) []Configura
 	return templates
 }
 
-func (t ConfigurationTemplate) Fill(data Data, outputDir string, copyPermissions bool) {
+func (t ConfigurationTemplate) Render(data Data, outputDir string, copyPermissions bool) {
 	handleError(os.MkdirAll(joinPath(outputDir, t.Path), os.ModePerm))
 	file, err := os.Create(strings.TrimSuffix(joinPath(outputDir, t.Path, t.Filename), ".template"))
 	handleError(err)
