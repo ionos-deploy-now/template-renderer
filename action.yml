@@ -13,19 +13,19 @@ inputs:
     description: 'The directory where the processed templates will be written to'
     required: false
     default: './'
-  env-var-prefix:
-    description: 'A prefix to identify environment variables which will be used to fill the templates'
-    required: false
-    default: 'config.'
+  data:
+    description: 'Data to use for rendering templates as yaml or json objects'
+    required: true
 runs:
   using: 'docker'
   image: 'Dockerfile'
   args:
-    - '--input'
+    - '--template-dir'
     - ${{ inputs.template-directory }}
     - '--template-extension'
     - ${{ inputs.template-extension }}
-    - '--output'
+    - '--output-dir'
     - ${{ inputs.output-directory }}
-    - '--env-var-prefix'
-    - ${{ inputs.env-var-prefix }}
+    - '--data'
+    - ${{ inputs.data }}
+    - '--copy-permissions'
