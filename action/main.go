@@ -82,7 +82,7 @@ func getDataFromEnvironment() map[string]interface{} {
 			data[name] = value
 		}
 	}
-	return map[string]interface{}{"data": data}
+	return map[string]interface{}{strings.ReplaceAll(envVarPrefix, ".", ""): data}
 }
 
 func handleError(err error) {

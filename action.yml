@@ -16,7 +16,7 @@ inputs:
   env-var-prefix:
     description: 'A prefix to identify environment variables which will be used to fill the templates'
     required: false
-    default: 'data.'
+    default: 'config.'
 runs:
   using: 'docker'
   image: 'Dockerfile'
