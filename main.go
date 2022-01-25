@@ -1,7 +1,7 @@
 package main
 
 import (
-	"deploy-now-configuration-template-action/cmd"
+	"template-renderer/cmd"
 )
 
 func main() {

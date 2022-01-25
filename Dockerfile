@@ -1,12 +1,12 @@
 FROM golang:1.17.6-alpine as builder
 
-COPY ./ /deploy-now-configuration-template-action
-RUN cd /deploy-now-configuration-template-action \
+COPY ./ /template-renderer
+RUN cd /template-renderer \
  && go get \
- && CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-w -s" -o template-action main.go
+ && CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-w -s" -o templater main.go
 
 FROM scratch
 
-COPY --from=builder /deploy-now-configuration-template-action/template-action /template-action
+COPY --from=builder /template-renderer/templater /templater
 
-ENTRYPOINT ["/template-action"]
+ENTRYPOINT ["/templater"]

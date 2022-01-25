@@ -1,4 +1,4 @@
-name: 'DeployNow Configuration Templating'
+name: 'DeployNow template rendering'
 description: 'Fill templates of configuration files before deployment based on the golang template engine'
 inputs:
   template-directory:

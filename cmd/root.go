@@ -7,7 +7,7 @@ import (
 )
 
 var rootCmd = &cobra.Command{
-	Use:   "template-action",
+	Use:   "templater",
 	Short: "",
 	Long:  "",
 	Run: func(cmd *cobra.Command, args []string) {

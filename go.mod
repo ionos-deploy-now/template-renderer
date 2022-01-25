@@ -1,4 +1,4 @@
-module deploy-now-configuration-template-action
+module template-renderer
 
 go 1.17
 
