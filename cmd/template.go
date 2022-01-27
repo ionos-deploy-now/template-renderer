@@ -1,7 +1,7 @@
 package cmd
 
 import (
-	"bufio"
+	"bytes"
 	"github.com/Masterminds/sprig"
 	"github.com/bmatcuk/doublestar/v4"
 	"io/fs"
@@ -52,12 +52,15 @@ func LoadTemplateFiles(templateDir string, templateExtension string) []Configura
 }
 
 func (t ConfigurationTemplate) Render(data Data, outputDir string, copyPermissions bool) {
+	var buffer bytes.Buffer
+	handleError(t.Template.Execute(&buffer, data))
+
 	handleError(os.MkdirAll(joinPath(outputDir, t.Path), os.ModePerm))
 	file, err := os.Create(joinPath(outputDir, t.Path, t.Filename))
 	handleError(err)
-	writer := bufio.NewWriter(file)
-	handleError(t.Template.Execute(writer, data))
-	handleError(writer.Flush())
+	_, err = file.Write(buffer.Bytes())
+	handleError(err)
+
 	if copyPermissions {
 		handleError(file.Chown(t.Owner, t.Group))
 		handleError(file.Chmod(t.Mode))
