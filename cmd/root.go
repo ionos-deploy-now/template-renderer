@@ -5,46 +5,45 @@ import (
 	"os"
 )
 
-var rootCmd = &cobra.Command{
-	Use:          "templater",
-	Short:        "",
-	Long:         "",
-	SilenceUsage: true,
-	RunE: func(cmd *cobra.Command, args []string) error {
-		templateDir, templateExtension, inputData, outputDir, copyPermissions, err := readFlags(cmd)
+func NewRootCmd() *cobra.Command {
+	rootCmd := &cobra.Command{
+		Use:          "templater",
+		Short:        "",
+		Long:         "",
+		SilenceUsage: true,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			templateDir, templateExtension, inputData, outputDir, copyPermissions, err := readFlags(cmd)
 
-		templates, err := LoadTemplateFiles(templateDir, templateExtension)
-		if err != nil {
-			return err
-		}
-
-		data, err := ParseInputData(inputData)
-		if err != nil {
-			return err
-		}
-
-		for _, template := range templates {
-			err = template.Render(data, outputDir, copyPermissions)
+			templates, err := LoadTemplateFiles(templateDir, templateExtension)
 			if err != nil {
 				return err
 			}
-		}
-		return nil
-	},
-}
 
-func Execute() {
-	if err := rootCmd.Execute(); err != nil {
-		os.Exit(1)
+			data, err := ParseInputData(inputData)
+			if err != nil {
+				return err
+			}
+
+			for _, template := range templates {
+				err = template.Render(data, outputDir, copyPermissions)
+				if err != nil {
+					return err
+				}
+			}
+			return nil
+		},
 	}
-}
-
-func init() {
 	rootCmd.Flags().StringP("template-dir", "i", "./", "Set the input directory.")
 	rootCmd.Flags().StringP("template-extension", "t", ".template", "Set a file extension to detect templates.")
 	rootCmd.Flags().StringP("output-dir", "o", "./", "Set the output directory.")
 	rootCmd.Flags().StringArrayP("data", "d", []string{}, "Data to use for rendering templates as yaml or json objects. Multiple objects will be merged before rendering.")
 	rootCmd.Flags().Bool("copy-permissions", false, "Copy the user, group and mode of the template.")
+	return rootCmd
+}
+func Execute() {
+	if err := NewRootCmd().Execute(); err != nil {
+		os.Exit(1)
+	}
 }
 
 func readFlags(cmd *cobra.Command) (templateDir string, templateExtension string, inputData []string, outputDir string, copyPermissions bool, err error) {

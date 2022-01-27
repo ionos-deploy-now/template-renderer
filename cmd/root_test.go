@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"bytes"
-	"errors"
 	"os"
 	"template-renderer/test"
 	"testing"
@@ -26,6 +25,7 @@ func TestSimple(t *testing.T) {
 	defer os.RemoveAll(TempPath)
 
 	var buffer bytes.Buffer
+	rootCmd := NewRootCmd()
 	rootCmd.SetOut(&buffer)
 	rootCmd.SetArgs([]string{"-i", "../test/data/templates", "-o", testDir(t), "-d", yamlData1})
 
@@ -43,6 +43,7 @@ func TestExtension(t *testing.T) {
 	defer os.RemoveAll(TempPath)
 
 	var buffer bytes.Buffer
+	rootCmd := NewRootCmd()
 	rootCmd.SetOut(&buffer)
 	rootCmd.SetArgs([]string{"-i", "../test/data/templates", "-o", testDir(t), "-d", yamlData1, "-t", ".template2"})
 
@@ -60,6 +61,7 @@ func TestJSON(t *testing.T) {
 	defer os.RemoveAll(TempPath)
 
 	var buffer bytes.Buffer
+	rootCmd := NewRootCmd()
 	rootCmd.SetOut(&buffer)
 	rootCmd.SetArgs([]string{"-i", "../test/data/templates", "-o", testDir(t), "-d", jsonData, "-t", ".template"})
 
@@ -77,6 +79,7 @@ func TestMultipleData(t *testing.T) {
 	defer os.RemoveAll(TempPath)
 
 	var buffer bytes.Buffer
+	rootCmd := NewRootCmd()
 	rootCmd.SetOut(&buffer)
 	rootCmd.SetArgs([]string{"-i", "../test/data/templates", "-o", testDir(t), "-d", yamlData1, "-d", yamlData2, "-t", ".template3"})
 
@@ -94,13 +97,14 @@ func TestMissingData(t *testing.T) {
 	defer os.RemoveAll(TempPath)
 
 	var buffer bytes.Buffer
+	rootCmd := NewRootCmd()
 	rootCmd.SetOut(&buffer)
 	rootCmd.SetArgs([]string{"-i", "../test/data/templates", "-o", testDir(t), "-d", yamlData1, "-t", ".template3"})
 
 	err := rootCmd.Execute()
 
 	test.AssertNotEqual(t, nil, err)
-	test.AssertNotEqual(t, errors.New("template: test.txt.template3:2:5: executing \"test.txt.template3\" at <.c>: map has no entry for key \"c\""), err)
+	test.AssertEqual(t, "template: test.txt.template3:2:5: executing \"test.txt.template3\" at <.c>: map has no entry for key \"c\"", err.Error())
 }
 
 func testDir(t *testing.T) string {
