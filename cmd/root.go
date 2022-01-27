@@ -1,33 +1,40 @@
 package cmd
 
 import (
-	"fmt"
 	"github.com/spf13/cobra"
 	"os"
 )
 
 var rootCmd = &cobra.Command{
-	Use:   "templater",
-	Short: "",
-	Long:  "",
-	Run: func(cmd *cobra.Command, args []string) {
-		templateDir := getStringFlag(cmd, "template-dir")
-		templateExtension := getStringFlag(cmd, "template-extension")
-		inputData := getStringsFlag(cmd, "data")
-		outputDir := getStringFlag(cmd, "output-dir")
-		copyPermissions := getBoolFlag(cmd, "copy-permissions")
+	Use:          "templater",
+	Short:        "",
+	Long:         "",
+	SilenceUsage: true,
+	RunE: func(cmd *cobra.Command, args []string) error {
+		templateDir, templateExtension, inputData, outputDir, copyPermissions, err := readFlags(cmd)
 
-		templates := LoadTemplateFiles(templateDir, templateExtension)
-		data := ParseInputData(inputData)
-		for _, template := range templates {
-			template.Render(data, outputDir, copyPermissions)
+		templates, err := LoadTemplateFiles(templateDir, templateExtension)
+		if err != nil {
+			return err
 		}
+
+		data, err := ParseInputData(inputData)
+		if err != nil {
+			return err
+		}
+
+		for _, template := range templates {
+			err = template.Render(data, outputDir, copyPermissions)
+			if err != nil {
+				return err
+			}
+		}
+		return nil
 	},
 }
 
 func Execute() {
 	if err := rootCmd.Execute(); err != nil {
-		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
 }
@@ -40,20 +47,21 @@ func init() {
 	rootCmd.Flags().Bool("copy-permissions", false, "Copy the user, group and mode of the template.")
 }
 
-func getStringFlag(cmd *cobra.Command, name string) string {
-	value, err := cmd.Flags().GetString(name)
-	handleError(err)
-	return value
-}
-
-func getStringsFlag(cmd *cobra.Command, name string) []string {
-	value, err := cmd.Flags().GetStringArray(name)
-	handleError(err)
-	return value
-}
-
-func getBoolFlag(cmd *cobra.Command, name string) bool {
-	value, err := cmd.Flags().GetBool(name)
-	handleError(err)
-	return value
+func readFlags(cmd *cobra.Command) (templateDir string, templateExtension string, inputData []string, outputDir string, copyPermissions bool, err error) {
+	if templateDir, err = cmd.Flags().GetString("template-dir"); err != nil {
+		return
+	}
+	if templateExtension, err = cmd.Flags().GetString("template-extension"); err != nil {
+		return
+	}
+	if inputData, err = cmd.Flags().GetStringArray("data"); err != nil {
+		return
+	}
+	if outputDir, err = cmd.Flags().GetString("output-dir"); err != nil {
+		return
+	}
+	if copyPermissions, err = cmd.Flags().GetBool("copy-permissions"); err != nil {
+		return
+	}
+	return
 }

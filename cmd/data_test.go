@@ -7,16 +7,18 @@ import (
 
 func TestParseDataYaml(t *testing.T) {
 	yaml := `a: 1`
-	data := parseData(yaml)
+	data, err := parseData(yaml)
 
+	test.AssertEqual(t, nil, err)
 	test.AssertNotEqual(t, nil, data["a"])
 	test.AssertEqual(t, 1, data["a"])
 }
 
 func TestParseDataJson(t *testing.T) {
 	yaml := `{"a": 1}`
-	data := parseData(yaml)
+	data, err := parseData(yaml)
 
+	test.AssertEqual(t, nil, err)
 	test.AssertNotEqual(t, nil, data["a"])
 	test.AssertEqual(t, 1, data["a"])
 }

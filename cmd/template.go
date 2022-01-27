@@ -27,15 +27,20 @@ func init() {
 	delete(templateFunctions, "expandenv")
 }
 
-func LoadTemplateFiles(templateDir string, templateExtension string) []ConfigurationTemplate {
+func LoadTemplateFiles(templateDir string, templateExtension string) ([]ConfigurationTemplate, error) {
 	var templates []ConfigurationTemplate
 	files, err := doublestar.Glob(os.DirFS(templateDir), "**/*"+templateExtension)
-	handleError(err)
+	if err != nil {
+		return nil, err
+	}
 	for _, file := range files {
+		var fileInfo syscall.Stat_t
+		if err := syscall.Stat(joinPath(templateDir, file), &fileInfo); err != nil {
+			return nil, err
+		}
+
 		subPaths := strings.Split(file, "/")
 		templateName := subPaths[len(subPaths)-1]
-		var fileInfo syscall.Stat_t
-		handleError(syscall.Stat(joinPath(templateDir, file), &fileInfo))
 		templates = append(templates, ConfigurationTemplate{
 			Path:     joinPath(subPaths[:len(subPaths)-1]...),
 			Filename: strings.TrimSuffix(templateName, templateExtension),
@@ -48,21 +53,37 @@ func LoadTemplateFiles(templateDir string, templateExtension string) []Configura
 				ParseFiles(joinPath(templateDir, file))),
 		})
 	}
-	return templates
+	return templates, nil
 }
 
-func (t ConfigurationTemplate) Render(data Data, outputDir string, copyPermissions bool) {
+func (t ConfigurationTemplate) Render(data Data, outputDir string, copyPermissions bool) error {
 	var buffer bytes.Buffer
-	handleError(t.Template.Execute(&buffer, data))
+	if err := t.Template.Execute(&buffer, data); err != nil {
+		return err
+	}
+	if err := os.MkdirAll(joinPath(outputDir, t.Path), os.ModePerm); err != nil {
+		return err
+	}
 
-	handleError(os.MkdirAll(joinPath(outputDir, t.Path), os.ModePerm))
 	file, err := os.Create(joinPath(outputDir, t.Path, t.Filename))
-	handleError(err)
-	_, err = file.Write(buffer.Bytes())
-	handleError(err)
+	if err != nil {
+		return err
+	}
+	if _, err = file.Write(buffer.Bytes()); err != nil {
+		return err
+	}
 
 	if copyPermissions {
-		handleError(file.Chown(t.Owner, t.Group))
-		handleError(file.Chmod(t.Mode))
+		if err := file.Chown(t.Owner, t.Group); err != nil {
+			return err
+		}
+		if err := file.Chmod(t.Mode); err != nil {
+			return err
+		}
 	}
+	return nil
+}
+
+func joinPath(s ...string) string {
+	return strings.Join(s, "/")
 }

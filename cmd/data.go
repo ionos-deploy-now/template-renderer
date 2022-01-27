@@ -6,21 +6,29 @@ import (
 
 type Data map[string]interface{}
 
-func ParseInputData(input []string) Data {
+func ParseInputData(input []string) (Data, error) {
 	if len(input) == 0 {
-		return Data{}
+		return Data{}, nil
 	}
-	data := parseData(input[0])
+	data, err := parseData(input[0])
+	if err != nil {
+		return nil, err
+	}
+
 	for i := 1; i < len(input); i++ {
-		data = data.merge(parseData(input[i]))
+		data2, err := parseData(input[i])
+		if err != nil {
+			return nil, err
+		}
+		data = data.merge(data2)
 	}
-	return data
+	return data, nil
 }
 
-func parseData(input string) Data {
+func parseData(input string) (Data, error) {
 	var data Data
-	handleError(yaml.Unmarshal([]byte(input), &data))
-	return data
+	err := yaml.Unmarshal([]byte(input), &data)
+	return data, err
 }
 
 func (d *Data) merge(d2 Data) Data {
