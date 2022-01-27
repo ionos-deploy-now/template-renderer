@@ -33,16 +33,16 @@ func LoadTemplateFiles(templateDir string, templateExtension string) []Configura
 	handleError(err)
 	for _, file := range files {
 		subPaths := strings.Split(file, "/")
-		filename := subPaths[len(subPaths)-1]
+		templateName := subPaths[len(subPaths)-1]
 		var fileInfo syscall.Stat_t
 		handleError(syscall.Stat(joinPath(templateDir, file), &fileInfo))
 		templates = append(templates, ConfigurationTemplate{
 			Path:     joinPath(subPaths[:len(subPaths)-1]...),
-			Filename: filename,
+			Filename: strings.TrimSuffix(templateName, templateExtension),
 			Owner:    int(fileInfo.Uid),
 			Group:    int(fileInfo.Gid),
 			Mode:     fs.FileMode(fileInfo.Mode),
-			Template: template.Must(template.New(filename).
+			Template: template.Must(template.New(templateName).
 				Funcs(templateFunctions).
 				Option("missingkey=error").
 				ParseFiles(joinPath(templateDir, file))),
@@ -53,7 +53,7 @@ func LoadTemplateFiles(templateDir string, templateExtension string) []Configura
 
 func (t ConfigurationTemplate) Render(data Data, outputDir string, copyPermissions bool) {
 	handleError(os.MkdirAll(joinPath(outputDir, t.Path), os.ModePerm))
-	file, err := os.Create(strings.TrimSuffix(joinPath(outputDir, t.Path, t.Filename), ".template"))
+	file, err := os.Create(joinPath(outputDir, t.Path, t.Filename))
 	handleError(err)
 	writer := bufio.NewWriter(file)
 	handleError(t.Template.Execute(writer, data))
