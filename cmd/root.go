@@ -5,6 +5,14 @@ import (
 	"os"
 )
 
+type rootConfig struct {
+	templateDir       string
+	templateExtension string
+	inputData         []string
+	outputDir         string
+	copyPermissions   bool
+}
+
 func NewRootCmd() *cobra.Command {
 	rootCmd := &cobra.Command{
 		Use:          "templater",
@@ -12,20 +20,23 @@ func NewRootCmd() *cobra.Command {
 		Long:         "",
 		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			templateDir, templateExtension, inputData, outputDir, copyPermissions, err := readFlags(cmd)
-
-			templates, err := LoadTemplateFiles(templateDir, templateExtension)
+			config, err := readFlags(cmd)
 			if err != nil {
 				return err
 			}
 
-			data, err := ParseInputData(inputData)
+			templates, err := LoadTemplateFiles(config.templateDir, config.templateExtension)
+			if err != nil {
+				return err
+			}
+
+			data, err := ParseInputData(config.inputData)
 			if err != nil {
 				return err
 			}
 
 			for _, template := range templates {
-				err = template.Render(data, outputDir, copyPermissions)
+				err = template.Render(data, config.outputDir, config.copyPermissions)
 				if err != nil {
 					return err
 				}
@@ -46,20 +57,20 @@ func Execute() {
 	}
 }
 
-func readFlags(cmd *cobra.Command) (templateDir string, templateExtension string, inputData []string, outputDir string, copyPermissions bool, err error) {
-	if templateDir, err = cmd.Flags().GetString("template-dir"); err != nil {
+func readFlags(cmd *cobra.Command) (config rootConfig, err error) {
+	if config.templateDir, err = cmd.Flags().GetString("template-dir"); err != nil {
 		return
 	}
-	if templateExtension, err = cmd.Flags().GetString("template-extension"); err != nil {
+	if config.templateExtension, err = cmd.Flags().GetString("template-extension"); err != nil {
 		return
 	}
-	if inputData, err = cmd.Flags().GetStringArray("data"); err != nil {
+	if config.inputData, err = cmd.Flags().GetStringArray("data"); err != nil {
 		return
 	}
-	if outputDir, err = cmd.Flags().GetString("output-dir"); err != nil {
+	if config.outputDir, err = cmd.Flags().GetString("output-dir"); err != nil {
 		return
 	}
-	if copyPermissions, err = cmd.Flags().GetBool("copy-permissions"); err != nil {
+	if config.copyPermissions, err = cmd.Flags().GetBool("copy-permissions"); err != nil {
 		return
 	}
 	return
