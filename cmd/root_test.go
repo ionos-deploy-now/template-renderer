@@ -93,6 +93,24 @@ func TestMultipleData(t *testing.T) {
 	test.AssertEqual(t, "A=1\nC=3", string(file))
 }
 
+func TestObject(t *testing.T) {
+	defer os.RemoveAll(TempPath)
+
+	var buffer bytes.Buffer
+	rootCmd := NewRootCmd()
+	rootCmd.SetOut(&buffer)
+	rootCmd.SetArgs([]string{"-i", "../test/data/templates", "-o", testDir(t), "-d", yamlData1, "-t", ".template4"})
+
+	err := rootCmd.Execute()
+
+	test.AssertEqual(t, nil, err)
+	test.AssertEqual(t, "", buffer.String())
+
+	file, err := os.ReadFile(testDir(t) + "/test.txt")
+	test.AssertEqual(t, nil, err)
+	test.AssertEqual(t, "A={\"a\":1,\"b\":{\"c\":2}}\nC={\"c\":2}", string(file))
+}
+
 func TestMissingData(t *testing.T) {
 	defer os.RemoveAll(TempPath)
 

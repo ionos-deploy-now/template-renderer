@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"encoding/json"
 	"gopkg.in/yaml.v3"
 )
 
@@ -44,4 +45,12 @@ func (d *Data) merge(d2 Data) Data {
 		}
 	}
 	return *d
+}
+
+func (d Data) String() string {
+	bytes, err := json.Marshal(d)
+	if err != nil {
+		return err.Error()
+	}
+	return string(bytes)
 }
