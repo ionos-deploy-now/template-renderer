@@ -6,23 +6,23 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-type IntermediateValue struct {
+type RuntimeValue struct {
 	value            string
 	updateUsedValues func(newValue string)
 }
 
-func (v IntermediateValue) String() string {
+func (v RuntimeValue) String() string {
 	v.updateUsedValues(v.value)
 	return v.value
 }
 
-func (v IntermediateValue) MarshalJSON() ([]byte, error) {
+func (v RuntimeValue) MarshalJSON() ([]byte, error) {
 	return []byte("\"" + v.String() + "\""), nil
 }
 
 type Data map[string]interface{}
 
-func ParseInputData(input []string, intermediateInput []string, usedValues *[]string) (Data, error) {
+func ParseInputData(input []string, runtimeInput []string, usedValues *[]string) (Data, error) {
 	data := Data{}
 	if len(input) > 0 {
 		for i := 0; i < len(input); i++ {
@@ -33,10 +33,10 @@ func ParseInputData(input []string, intermediateInput []string, usedValues *[]st
 			data = data.merge(data2)
 		}
 	}
-	if len(intermediateInput) > 0 {
-		for i := 0; i < len(intermediateInput); i++ {
-			data2, err := parseData(intermediateInput[i])
-			data2 = data2.convertToIntermediateValues(usedValues)
+	if len(runtimeInput) > 0 {
+		for i := 0; i < len(runtimeInput); i++ {
+			data2, err := parseData(runtimeInput[i])
+			data2 = data2.convertToRuntimeValues(usedValues)
 			if err != nil {
 				return nil, err
 			}
@@ -52,12 +52,12 @@ func parseData(input string) (Data, error) {
 	return data, err
 }
 
-func (d *Data) convertToIntermediateValues(usedValues *[]string) Data {
+func (d *Data) convertToRuntimeValues(usedValues *[]string) Data {
 	for key, value := range *d {
 		if subData, ok := value.(Data); ok {
-			subData.convertToIntermediateValues(usedValues)
+			subData.convertToRuntimeValues(usedValues)
 		} else {
-			(*d)[key] = IntermediateValue{
+			(*d)[key] = RuntimeValue{
 				value: fmt.Sprintf("%v", value),
 				updateUsedValues: func(newValue string) {
 					for _, value := range *usedValues {

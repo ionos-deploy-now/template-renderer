@@ -11,7 +11,7 @@ type rootConfig struct {
 	templateDir       string
 	templateExtension string
 	inputData         []string
-	intermediateData  []string
+	runtimeData       []string
 	outputDir         string
 	copyPermissions   bool
 	githubAction      bool
@@ -35,7 +35,7 @@ func NewRootCmd() *cobra.Command {
 			}
 
 			var usedValues []string
-			data, err := ParseInputData(config.inputData, config.intermediateData, &usedValues)
+			data, err := ParseInputData(config.inputData, config.runtimeData, &usedValues)
 			if err != nil {
 				return err
 			}
@@ -49,10 +49,10 @@ func NewRootCmd() *cobra.Command {
 
 			var message string
 			if config.githubAction {
-				message = fmt.Sprintf("::set-output name=used_intermediate_values::%s", strings.Join(usedValues, ","))
+				message = fmt.Sprintf("::set-output name=used_runtime_values::%s", strings.Join(usedValues, ","))
 
 			} else if len(usedValues) > 0 {
-				message = "Intermediate values used while rendering templates:\n"
+				message = "Runtime values used while rendering templates:\n"
 				message += strings.Join(usedValues, "\n")
 			}
 			if _, err = cmd.OutOrStdout().Write([]byte(message)); err != nil {
@@ -66,7 +66,7 @@ func NewRootCmd() *cobra.Command {
 	rootCmd.Flags().StringP("template-extension", "t", ".template", "Set a file extension to detect templates.")
 	rootCmd.Flags().StringP("output-dir", "o", "./", "Set the output directory.")
 	rootCmd.Flags().StringArrayP("data", "d", []string{}, "Data to use for rendering templates as yaml or json objects. Multiple objects will be merged before rendering.")
-	rootCmd.Flags().StringArray("intermediate-data", []string{}, "Same as --data but used values will be printed out after rendering to use them as placeholders for another template engine.")
+	rootCmd.Flags().StringArrayP("runtime-data", "r", []string{}, "Same as --data but used values will be printed out after rendering to use them as placeholders for another template engine.")
 	rootCmd.Flags().Bool("copy-permissions", false, "Copy the user, group and mode of the template.")
 	rootCmd.Flags().Bool("github-action", false, "Use github action output format.")
 	return rootCmd
@@ -87,7 +87,7 @@ func readFlags(cmd *cobra.Command) (config rootConfig, err error) {
 	if config.inputData, err = cmd.Flags().GetStringArray("data"); err != nil {
 		return
 	}
-	if config.intermediateData, err = cmd.Flags().GetStringArray("intermediate-data"); err != nil {
+	if config.runtimeData, err = cmd.Flags().GetStringArray("runtime-data"); err != nil {
 		return
 	}
 	if config.outputDir, err = cmd.Flags().GetString("output-dir"); err != nil {

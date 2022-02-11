@@ -125,18 +125,18 @@ func TestMissingData(t *testing.T) {
 	test.AssertEqual(t, "template: test.txt.template3:2:5: executing \"test.txt.template3\" at <.c>: map has no entry for key \"c\"", err.Error())
 }
 
-func TestIntermediateData(t *testing.T) {
+func TestRuntimeData(t *testing.T) {
 	defer os.RemoveAll(TempPath)
 
 	var buffer bytes.Buffer
 	rootCmd := NewRootCmd()
 	rootCmd.SetOut(&buffer)
-	rootCmd.SetArgs([]string{"-i", "../test/data/templates", "-o", testDir(t), "--intermediate-data", yamlData1})
+	rootCmd.SetArgs([]string{"-i", "../test/data/templates", "-o", testDir(t), "--runtime-data", yamlData1})
 
 	err := rootCmd.Execute()
 
 	test.AssertEqual(t, nil, err)
-	test.AssertEqual(t, "Intermediate values used while rendering templates:\n1\n2", buffer.String())
+	test.AssertEqual(t, "Runtime values used while rendering templates:\n1\n2", buffer.String())
 
 	file, err := os.ReadFile(testDir(t) + "/test.txt")
 	test.AssertEqual(t, nil, err)
