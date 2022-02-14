@@ -22,26 +22,29 @@ func (v RuntimeValue) MarshalJSON() ([]byte, error) {
 
 type Data map[string]interface{}
 
-func ParseInputData(input []string, runtimeInput []string, usedValues *[]string) (Data, error) {
+func ParseInputData(secrets string, runtimeData string, additionalData []string, usedValues *[]string) (Data, error) {
 	data := Data{}
-	if len(input) > 0 {
-		for i := 0; i < len(input); i++ {
-			data2, err := parseData(input[i])
-			if err != nil {
-				return nil, err
-			}
-			data = data.merge(data2)
+	if secrets != "" {
+		data2, err := parseData(secrets)
+		if err != nil {
+			return nil, err
 		}
+		data = data.merge(Data{"secrets": data2})
 	}
-	if len(runtimeInput) > 0 {
-		for i := 0; i < len(runtimeInput); i++ {
-			data2, err := parseData(runtimeInput[i])
-			data2 = data2.convertToRuntimeValues(usedValues)
-			if err != nil {
-				return nil, err
-			}
-			data = data.merge(data2)
+	if runtimeData != "" {
+		data2, err := parseData(runtimeData)
+		data2 = data2.convertToRuntimeValues(usedValues)
+		if err != nil {
+			return nil, err
 		}
+		data = data.merge(Data{"runtime": data2})
+	}
+	for _, datum := range additionalData {
+		data2, err := parseData(datum)
+		if err != nil {
+			return nil, err
+		}
+		data = data.merge(data2)
 	}
 	return data, nil
 }

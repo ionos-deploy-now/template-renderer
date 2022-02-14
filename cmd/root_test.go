@@ -27,7 +27,7 @@ func TestSimple(t *testing.T) {
 	var buffer bytes.Buffer
 	rootCmd := NewRootCmd()
 	rootCmd.SetOut(&buffer)
-	rootCmd.SetArgs([]string{"-i", "../test/data/templates", "-o", testDir(t), "-d", yamlData1})
+	rootCmd.SetArgs([]string{"-i", "../test/data/templates", "-o", testDir(t), yamlData1})
 
 	err := rootCmd.Execute()
 
@@ -45,7 +45,7 @@ func TestExtension(t *testing.T) {
 	var buffer bytes.Buffer
 	rootCmd := NewRootCmd()
 	rootCmd.SetOut(&buffer)
-	rootCmd.SetArgs([]string{"-i", "../test/data/templates", "-o", testDir(t), "-d", yamlData1, "-t", ".template2"})
+	rootCmd.SetArgs([]string{"-i", "../test/data/templates", "-o", testDir(t), "-t", ".template2", "--secrets", yamlData1})
 
 	err := rootCmd.Execute()
 
@@ -63,7 +63,7 @@ func TestJSON(t *testing.T) {
 	var buffer bytes.Buffer
 	rootCmd := NewRootCmd()
 	rootCmd.SetOut(&buffer)
-	rootCmd.SetArgs([]string{"-i", "../test/data/templates", "-o", testDir(t), "-d", jsonData, "-t", ".template"})
+	rootCmd.SetArgs([]string{"-i", "../test/data/templates", "-o", testDir(t), "-t", ".template", jsonData})
 
 	err := rootCmd.Execute()
 
@@ -81,7 +81,7 @@ func TestMultipleData(t *testing.T) {
 	var buffer bytes.Buffer
 	rootCmd := NewRootCmd()
 	rootCmd.SetOut(&buffer)
-	rootCmd.SetArgs([]string{"-i", "../test/data/templates", "-o", testDir(t), "-d", yamlData1, "-d", yamlData2, "-t", ".template3"})
+	rootCmd.SetArgs([]string{"-i", "../test/data/templates", "-o", testDir(t), "-t", ".template3", yamlData1, yamlData2})
 
 	err := rootCmd.Execute()
 
@@ -99,7 +99,7 @@ func TestObject(t *testing.T) {
 	var buffer bytes.Buffer
 	rootCmd := NewRootCmd()
 	rootCmd.SetOut(&buffer)
-	rootCmd.SetArgs([]string{"-i", "../test/data/templates", "-o", testDir(t), "-d", yamlData1, "-t", ".template4"})
+	rootCmd.SetArgs([]string{"-i", "../test/data/templates", "-o", testDir(t), "-t", ".template4", yamlData1})
 
 	err := rootCmd.Execute()
 
@@ -117,7 +117,7 @@ func TestMissingData(t *testing.T) {
 	var buffer bytes.Buffer
 	rootCmd := NewRootCmd()
 	rootCmd.SetOut(&buffer)
-	rootCmd.SetArgs([]string{"-i", "../test/data/templates", "-o", testDir(t), "-d", yamlData1, "-t", ".template3"})
+	rootCmd.SetArgs([]string{"-i", "../test/data/templates", "-o", testDir(t), "-t", ".template3", yamlData1})
 
 	err := rootCmd.Execute()
 
@@ -131,12 +131,12 @@ func TestRuntimeData(t *testing.T) {
 	var buffer bytes.Buffer
 	rootCmd := NewRootCmd()
 	rootCmd.SetOut(&buffer)
-	rootCmd.SetArgs([]string{"-i", "../test/data/templates", "-o", testDir(t), "--runtime-data", yamlData1})
+	rootCmd.SetArgs([]string{"-i", "../test/data/templates", "-o", testDir(t), "-t", ".template5", "--output-runtime", "--runtime", yamlData1})
 
 	err := rootCmd.Execute()
 
 	test.AssertEqual(t, nil, err)
-	test.AssertEqual(t, "Runtime values used while rendering templates:\n1\n2", buffer.String())
+	test.AssertEqual(t, "::set-output name=used_runtime_values::1,2", buffer.String())
 
 	file, err := os.ReadFile(testDir(t) + "/test.txt")
 	test.AssertEqual(t, nil, err)

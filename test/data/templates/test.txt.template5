@@ -1,0 +1,2 @@
+A={{ .runtime.a }}
+B={{ .runtime.b.c }}

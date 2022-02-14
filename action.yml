@@ -13,9 +13,12 @@ inputs:
     description: 'The directory where the processed templates will be written to'
     required: false
     default: './'
-  data:
+  secrets:
     description: 'Data to use for rendering templates as yaml or json objects'
     required: true
+outputs:
+  used_runtime_values:
+    description: 'Used runtime values to replace them with another template engine later'
 runs:
   using: 'docker'
   image: 'Dockerfile'
@@ -26,6 +29,9 @@ runs:
     - ${{ inputs.template-extension }}
     - '--output-dir'
     - ${{ inputs.output-directory }}
-    - '--data'
-    - ${{ inputs.data }}
+    - '--secrets'
+    - ${{ inputs.secrets }}
+    - '--runtime'
+    - '{"db": {"user": "%DB_USER%", "password": "%DB_PASSWORD%", "url": "%DB_URL%"}}'
     - '--copy-permissions'
+    - '--output-runtime'
