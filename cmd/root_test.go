@@ -131,12 +131,12 @@ func TestRuntimeData(t *testing.T) {
 	var buffer bytes.Buffer
 	rootCmd := NewRootCmd()
 	rootCmd.SetOut(&buffer)
-	rootCmd.SetArgs([]string{"-i", "../test/data/templates", "-o", testDir(t), "-t", ".template5", "--output-runtime", "--runtime", yamlData1})
+	rootCmd.SetArgs([]string{"-i", "../test/data/templates", "-o", testDir(t), "-t", ".template5", "--output-runtime-placeholder-files", "--runtime", yamlData1})
 
 	err := rootCmd.Execute()
 
 	test.AssertEqual(t, nil, err)
-	test.AssertEqual(t, "::set-output name=used_runtime_values::1,2", buffer.String())
+	test.AssertEqual(t, "::set-output name=runtime-placeholder-files::../tmp/TestRuntimeData/test.txt", buffer.String())
 
 	file, err := os.ReadFile(testDir(t) + "/test.txt")
 	test.AssertEqual(t, nil, err)

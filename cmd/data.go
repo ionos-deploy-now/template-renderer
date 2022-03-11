@@ -8,11 +8,11 @@ import (
 
 type RuntimeValue struct {
 	value            string
-	updateUsedValues func(newValue string)
+	updateUsedValues func()
 }
 
 func (v RuntimeValue) String() string {
-	v.updateUsedValues(v.value)
+	v.updateUsedValues()
 	return v.value
 }
 
@@ -22,7 +22,7 @@ func (v RuntimeValue) MarshalJSON() ([]byte, error) {
 
 type Data map[string]interface{}
 
-func ParseInputData(secrets string, runtimeData string, additionalData []string, usedValues *[]string) (Data, error) {
+func ParseInputData(secrets string, runtimeData string, additionalData []string, runtimePlaceholderCount *int) (Data, error) {
 	data := Data{}
 	if secrets != "" {
 		data2, err := parseData(secrets)
@@ -33,7 +33,7 @@ func ParseInputData(secrets string, runtimeData string, additionalData []string,
 	}
 	if runtimeData != "" {
 		data2, err := parseData(runtimeData)
-		data2 = data2.convertToRuntimeValues(usedValues)
+		data2 = data2.convertToRuntimeValues(runtimePlaceholderCount)
 		if err != nil {
 			return nil, err
 		}
@@ -55,20 +55,15 @@ func parseData(input string) (Data, error) {
 	return data, err
 }
 
-func (d *Data) convertToRuntimeValues(usedValues *[]string) Data {
+func (d *Data) convertToRuntimeValues(runtimePlaceholderCount *int) Data {
 	for key, value := range *d {
 		if subData, ok := value.(Data); ok {
-			subData.convertToRuntimeValues(usedValues)
+			subData.convertToRuntimeValues(runtimePlaceholderCount)
 		} else {
 			(*d)[key] = RuntimeValue{
 				value: fmt.Sprintf("%v", value),
-				updateUsedValues: func(newValue string) {
-					for _, value := range *usedValues {
-						if value == newValue {
-							return
-						}
-					}
-					*usedValues = append(*usedValues, newValue)
+				updateUsedValues: func() {
+					*runtimePlaceholderCount++
 				},
 			}
 		}

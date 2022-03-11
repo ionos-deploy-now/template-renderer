@@ -8,13 +8,13 @@ import (
 )
 
 type rootConfig struct {
-	templateDir       string
-	templateExtension string
-	secrets           string
-	runtimeData       string
-	outputDir         string
-	copyPermissions   bool
-	outputRuntime     bool
+	templateDir                   string
+	templateExtension             string
+	secrets                       string
+	runtimeData                   string
+	outputDir                     string
+	copyPermissions               bool
+	outputRuntimePlaceholderFiles bool
 }
 
 func NewRootCmd() *cobra.Command {
@@ -34,21 +34,26 @@ func NewRootCmd() *cobra.Command {
 				return err
 			}
 
-			var usedValues []string
-			data, err := ParseInputData(config.secrets, config.runtimeData, args, &usedValues)
+			runtimePlaceholderCount := 0
+			data, err := ParseInputData(config.secrets, config.runtimeData, args, &runtimePlaceholderCount)
 			if err != nil {
 				return err
 			}
 
+			var runtimeVariableFiles []string
 			for _, template := range templates {
 				err = template.Render(data, config.outputDir, config.copyPermissions)
+				if runtimePlaceholderCount > 0 {
+					runtimeVariableFiles = append(runtimeVariableFiles, joinPath(config.outputDir, template.Path, template.Filename))
+					runtimePlaceholderCount = 0
+				}
 				if err != nil {
 					return err
 				}
 			}
 
-			if config.outputRuntime {
-				output := fmt.Sprintf("::set-output name=used_runtime_values::%s", strings.Join(usedValues, ","))
+			if config.outputRuntimePlaceholderFiles {
+				output := fmt.Sprintf("::set-output name=runtime-placeholder-files::%s", strings.Join(runtimeVariableFiles, ","))
 				if _, err = cmd.OutOrStdout().Write([]byte(output)); err != nil {
 					return err
 				}
@@ -62,7 +67,7 @@ func NewRootCmd() *cobra.Command {
 	rootCmd.Flags().StringP("output-dir", "o", "./", "Set the output directory.")
 	rootCmd.Flags().StringP("secrets", "s", "", "Data to use for rendering templates. Will be prefixed with \"secrets\".")
 	rootCmd.Flags().StringP("runtime", "r", "", "Data to use for rendering templates. Will be prefixed with \"runtime\".")
-	rootCmd.Flags().Bool("output-runtime", false, "Print used runtime values as github-action output to replace them with another template engine later.")
+	rootCmd.Flags().Bool("output-runtime-placeholder-files", false, "Print file that contain runtime placeholder as github-action output to replace them with another template engine later.")
 	rootCmd.Flags().Bool("copy-permissions", false, "Copy the user, group and mode of the template.")
 	return rootCmd
 }
@@ -91,7 +96,7 @@ func readFlags(cmd *cobra.Command) (config rootConfig, err error) {
 	if config.copyPermissions, err = cmd.Flags().GetBool("copy-permissions"); err != nil {
 		return
 	}
-	if config.outputRuntime, err = cmd.Flags().GetBool("output-runtime"); err != nil {
+	if config.outputRuntimePlaceholderFiles, err = cmd.Flags().GetBool("output-runtime-placeholder-files"); err != nil {
 		return
 	}
 	return

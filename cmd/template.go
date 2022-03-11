@@ -85,5 +85,11 @@ func (t ConfigurationTemplate) Render(data Data, outputDir string, copyPermissio
 }
 
 func joinPath(s ...string) string {
-	return strings.Join(s, "/")
+	var values []string
+	for _, value := range s {
+		if value != "" {
+			values = append(values, value)
+		}
+	}
+	return strings.Join(values, "/")
 }
