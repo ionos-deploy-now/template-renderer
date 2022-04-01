@@ -34,16 +34,20 @@ func LoadTemplateFiles(templateDir string, templateExtension string) ([]Configur
 		return nil, err
 	}
 	for _, file := range files {
+		subPaths := strings.Split(file, "/")
+		templateName := subPaths[len(subPaths)-1]
+		filename := strings.TrimSuffix(templateName, templateExtension)
+		if filename == "" {
+			break
+		}
+
 		var fileInfo syscall.Stat_t
 		if err := syscall.Stat(joinPath(templateDir, file), &fileInfo); err != nil {
 			return nil, err
 		}
-
-		subPaths := strings.Split(file, "/")
-		templateName := subPaths[len(subPaths)-1]
 		templates = append(templates, ConfigurationTemplate{
 			Path:     joinPath(subPaths[:len(subPaths)-1]...),
-			Filename: strings.TrimSuffix(templateName, templateExtension),
+			Filename: filename,
 			Owner:    int(fileInfo.Uid),
 			Group:    int(fileInfo.Gid),
 			Mode:     fs.FileMode(fileInfo.Mode),
