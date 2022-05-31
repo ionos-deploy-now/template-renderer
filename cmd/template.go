@@ -2,17 +2,17 @@ package cmd
 
 import (
 	"bytes"
+	"fmt"
 	"github.com/Masterminds/sprig"
-	"github.com/bmatcuk/doublestar/v4"
 	"io/fs"
 	"os"
 	"strings"
 	"syscall"
+	"template-renderer/cmd/types"
 	"text/template"
 )
 
 type ConfigurationTemplate struct {
-	Path     string
 	Filename string
 	Owner    int
 	Group    int
@@ -27,49 +27,40 @@ func init() {
 	delete(templateFunctions, "expandenv")
 }
 
-func LoadTemplateFiles(templateDir string, templateExtension string) ([]ConfigurationTemplate, error) {
-	var templates []ConfigurationTemplate
-	files, err := doublestar.Glob(os.DirFS(templateDir), "**/*"+templateExtension)
-	if err != nil {
+func ReadTemplateFile(templateFilePath types.Path, templateFileName string, templateExtension string) (*ConfigurationTemplate, error) {
+	fullPath := templateFilePath.Append(templateFileName).String()
+	filename := strings.TrimSuffix(templateFileName, templateExtension)
+	if filename == "" {
+		return nil, fmt.Errorf("template has no name")
+	}
+
+	var fileInfo syscall.Stat_t
+	if err := syscall.Stat(fullPath, &fileInfo); err != nil {
 		return nil, err
 	}
-	for _, file := range files {
-		subPaths := strings.Split(file, "/")
-		templateName := subPaths[len(subPaths)-1]
-		filename := strings.TrimSuffix(templateName, templateExtension)
-		if filename == "" {
-			break
-		}
-
-		var fileInfo syscall.Stat_t
-		if err := syscall.Stat(joinPath(templateDir, file), &fileInfo); err != nil {
-			return nil, err
-		}
-		templates = append(templates, ConfigurationTemplate{
-			Path:     joinPath(subPaths[:len(subPaths)-1]...),
-			Filename: filename,
-			Owner:    int(fileInfo.Uid),
-			Group:    int(fileInfo.Gid),
-			Mode:     fs.FileMode(fileInfo.Mode),
-			Template: template.Must(template.New(templateName).
-				Funcs(templateFunctions).
-				Option("missingkey=error").
-				ParseFiles(joinPath(templateDir, file))),
-		})
-	}
-	return templates, nil
+	return &ConfigurationTemplate{
+		Filename: filename,
+		Owner:    int(fileInfo.Uid),
+		Group:    int(fileInfo.Gid),
+		Mode:     fs.FileMode(fileInfo.Mode),
+		Template: template.Must(template.New(templateFileName).
+			Funcs(templateFunctions).
+			Option("missingkey=error").
+			ParseFiles(fullPath)),
+	}, nil
 }
 
-func (t ConfigurationTemplate) Render(data Data, outputDir string, copyPermissions bool) error {
+func (t ConfigurationTemplate) Render(data *Data, outputDir types.Path, copyPermissions bool, runtimeVariableFiles *[]string) error {
 	var buffer bytes.Buffer
-	if err := t.Template.Execute(&buffer, data); err != nil {
+	if err := t.Template.Execute(&buffer, data.Values); err != nil {
 		return err
 	}
-	if err := os.MkdirAll(joinPath(outputDir, t.Path), os.ModePerm); err != nil {
-		return err
+	if data.RuntimeValuesUsed {
+		*runtimeVariableFiles = append(*runtimeVariableFiles, outputDir.Append(t.Filename).String())
+		data.ResetUsedRuntimeValues()
 	}
 
-	file, err := os.Create(joinPath(outputDir, t.Path, t.Filename))
+	file, err := os.Create(outputDir.Append(t.Filename).String())
 	if err != nil {
 		return err
 	}
@@ -86,14 +77,4 @@ func (t ConfigurationTemplate) Render(data Data, outputDir string, copyPermissio
 		}
 	}
 	return nil
-}
-
-func joinPath(s ...string) string {
-	var values []string
-	for _, value := range s {
-		if value != "" {
-			values = append(values, value)
-		}
-	}
-	return strings.Join(values, "/")
 }

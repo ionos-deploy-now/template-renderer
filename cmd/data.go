@@ -20,74 +20,86 @@ func (v RuntimeValue) MarshalJSON() ([]byte, error) {
 	return []byte("\"" + v.String() + "\""), nil
 }
 
-type Data map[string]interface{}
+type Values map[string]interface{}
 
-func ParseInputData(secrets string, runtimeData string, additionalData []string, runtimePlaceholderCount *int) (Data, error) {
+type Data struct {
+	Values            Values
+	RuntimeValuesUsed bool
+}
+
+func (d Data) ResetUsedRuntimeValues() {
+	d.RuntimeValuesUsed = false
+}
+
+func ParseInputData(secrets string, runtimeData string, additionalData []string) (*Data, error) {
 	data := Data{}
+	values := Values{}
 	if secrets != "" {
-		data2, err := parseData(secrets)
+		values2, err := parseData(secrets)
 		if err != nil {
 			return nil, err
 		}
-		data = data.merge(Data{"secrets": data2})
+		values = values.merge(Values{"secrets": values2})
 	}
 	if runtimeData != "" {
-		data2, err := parseData(runtimeData)
-		data2 = data2.convertToRuntimeValues(runtimePlaceholderCount)
+		values2, err := parseData(runtimeData)
+		values2 = values2.convertToRuntimeValues(&data)
 		if err != nil {
 			return nil, err
 		}
-		data = data.merge(Data{"runtime": data2})
+		values = values.merge(Values{"runtime": values2})
 	}
 	for _, datum := range additionalData {
-		data2, err := parseData(datum)
+		values2, err := parseData(datum)
 		if err != nil {
 			return nil, err
 		}
-		data = data.merge(data2)
+		values = values.merge(values2)
 	}
-	return data, nil
+	data.Values = values
+	return &data, nil
 }
 
-func parseData(input string) (Data, error) {
-	var data Data
-	err := yaml.Unmarshal([]byte(input), &data)
-	return data, err
+func parseData(input string) (Values, error) {
+	var values Values
+	err := yaml.Unmarshal([]byte(input), &values)
+	return values, err
 }
 
-func (d *Data) convertToRuntimeValues(runtimePlaceholderCount *int) Data {
-	for key, value := range *d {
-		if subData, ok := value.(Data); ok {
-			subData.convertToRuntimeValues(runtimePlaceholderCount)
+func (v *Values) convertToRuntimeValues(data *Data) Values {
+	for key, value := range *v {
+		if subData, ok := value.(Values); ok {
+			subData.convertToRuntimeValues(data)
 		} else {
-			(*d)[key] = RuntimeValue{
-				value: fmt.Sprintf("%v", value),
+			stringValue := fmt.Sprintf("%v", value)
+			(*v)[key] = RuntimeValue{
+				value: stringValue,
 				updateUsedValues: func() {
-					*runtimePlaceholderCount++
+					(*data).RuntimeValuesUsed = true
 				},
 			}
 		}
 	}
-	return *d
+	return *v
 }
 
-func (d *Data) merge(d2 Data) Data {
-	for k, v := range d2 {
-		if (*d)[k] == nil {
-			(*d)[k] = v
+func (v *Values) merge(v2 Values) Values {
+	for key, value := range v2 {
+		if (*v)[key] == nil {
+			(*v)[key] = value
 		} else {
-			v1, ok1 := (*d)[k].(Data)
-			v2, ok2 := v.(Data)
+			v1, ok1 := (*v)[key].(Values)
+			v2, ok2 := value.(Values)
 			if ok1 && ok2 {
-				(*d)[k] = v1.merge(v2)
+				(*v)[key] = v1.merge(v2)
 			}
 		}
 	}
-	return *d
+	return *v
 }
 
-func (d Data) String() string {
-	bytes, err := json.Marshal(d)
+func (v Values) String() string {
+	bytes, err := json.Marshal(v)
 	if err != nil {
 		return err.Error()
 	}

@@ -5,6 +5,7 @@ import (
 	"github.com/spf13/cobra"
 	"os"
 	"strings"
+	"template-renderer/cmd/types"
 )
 
 type rootConfig struct {
@@ -29,27 +30,19 @@ func NewRootCmd() *cobra.Command {
 				return err
 			}
 
-			templates, err := LoadTemplateFiles(config.templateDir, config.templateExtension)
+			directory, err := ReadDirectory(types.Path(config.templateDir), "", config.templateExtension)
 			if err != nil {
 				return err
 			}
 
-			runtimePlaceholderCount := 0
-			data, err := ParseInputData(config.secrets, config.runtimeData, args, &runtimePlaceholderCount)
+			data, err := ParseInputData(config.secrets, config.runtimeData, args)
 			if err != nil {
 				return err
 			}
 
 			var runtimeVariableFiles []string
-			for _, template := range templates {
-				err = template.Render(data, config.outputDir, config.copyPermissions)
-				if runtimePlaceholderCount > 0 {
-					runtimeVariableFiles = append(runtimeVariableFiles, joinPath(config.outputDir, template.Path, template.Filename))
-					runtimePlaceholderCount = 0
-				}
-				if err != nil {
-					return err
-				}
+			if err := directory.Render(data, types.Path(config.outputDir), config.copyPermissions, &runtimeVariableFiles); err != nil {
+				return err
 			}
 
 			if config.outputRuntimePlaceholderFiles {

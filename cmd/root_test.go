@@ -2,7 +2,9 @@ package cmd
 
 import (
 	"bytes"
+	"github.com/stretchr/testify/assert"
 	"os"
+	"syscall"
 	"template-renderer/test"
 	"testing"
 )
@@ -141,6 +143,54 @@ func TestRuntimeData(t *testing.T) {
 	file, err := os.ReadFile(testDir(t) + "/test.txt")
 	test.AssertEqual(t, nil, err)
 	test.AssertEqual(t, "A=1\nB=2", string(file))
+}
+
+func TestFilePermissions(t *testing.T) {
+	defer os.RemoveAll(TempPath)
+
+	var buffer bytes.Buffer
+	rootCmd := NewRootCmd()
+	rootCmd.SetOut(&buffer)
+	rootCmd.SetArgs([]string{"-i", "../test/data/templates", "-o", testDir(t), "-t", ".template6", "--copy-permissions", "--secrets", yamlData1})
+
+	err := rootCmd.Execute()
+
+	test.AssertEqual(t, nil, err)
+	test.AssertEqual(t, "", buffer.String())
+
+	file, err := os.ReadFile(testDir(t) + "/test.txt")
+	test.AssertEqual(t, nil, err)
+	test.AssertEqual(t, "A=1", string(file))
+
+	var fileInfo syscall.Stat_t
+	if err := syscall.Stat(testDir(t)+"/test.txt", &fileInfo); err != nil {
+		assert.Fail(t, err.Error())
+	}
+	test.AssertEqual(t, os.FileMode(0755).String(), os.FileMode(fileInfo.Mode).String())
+}
+
+func TestDirectoryPermissions(t *testing.T) {
+	//defer os.RemoveAll(TempPath)
+
+	var buffer bytes.Buffer
+	rootCmd := NewRootCmd()
+	rootCmd.SetOut(&buffer)
+	rootCmd.SetArgs([]string{"-i", "../test/data/templates", "-o", testDir(t), "-t", ".template7", "--copy-permissions", "--secrets", yamlData1})
+
+	err := rootCmd.Execute()
+
+	test.AssertEqual(t, nil, err)
+	test.AssertEqual(t, "", buffer.String())
+
+	file, err := os.ReadFile(testDir(t) + "/dir/test.txt")
+	test.AssertEqual(t, nil, err)
+	test.AssertEqual(t, "A=1", string(file))
+
+	var fileInfo syscall.Stat_t
+	if err := syscall.Stat(testDir(t)+"/dir/test.txt", &fileInfo); err != nil {
+		assert.Fail(t, err.Error())
+	}
+	test.AssertEqual(t, os.FileMode(0755).String(), os.FileMode(fileInfo.Mode).String())
 }
 
 func testDir(t *testing.T) string {
