@@ -32,7 +32,7 @@ func ReadDirectory(baseDir types.Path, name types.Path, templateExtension string
 				return nil, err
 			}
 			subDirectories = append(subDirectories, subDirectory)
-		} else if strings.HasSuffix(entry.Name(), templateExtension) {
+		} else if strings.HasSuffix(entry.Name(), templateExtension) && entry.Name() != templateExtension {
 			template, err := ReadTemplateFile(currentDir, entry.Name(), templateExtension)
 			if err != nil {
 				return nil, err

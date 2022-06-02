@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"bytes"
-	"fmt"
 	"github.com/Masterminds/sprig"
 	"io/fs"
 	"os"
@@ -29,17 +28,12 @@ func init() {
 
 func ReadTemplateFile(templateFilePath types.Path, templateFileName string, templateExtension string) (*ConfigurationTemplate, error) {
 	fullPath := templateFilePath.Append(templateFileName).String()
-	filename := strings.TrimSuffix(templateFileName, templateExtension)
-	if filename == "" {
-		return nil, fmt.Errorf("template has no name")
-	}
-
 	var fileInfo syscall.Stat_t
 	if err := syscall.Stat(fullPath, &fileInfo); err != nil {
 		return nil, err
 	}
 	return &ConfigurationTemplate{
-		Filename: filename,
+		Filename: strings.TrimSuffix(templateFileName, templateExtension),
 		Owner:    int(fileInfo.Uid),
 		Group:    int(fileInfo.Gid),
 		Mode:     fs.FileMode(fileInfo.Mode),
