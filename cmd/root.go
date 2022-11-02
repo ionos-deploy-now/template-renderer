@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"fmt"
 	"github.com/spf13/cobra"
 	"os"
 	"strings"
@@ -46,9 +45,18 @@ func NewRootCmd() *cobra.Command {
 			}
 
 			if config.outputRuntimePlaceholderFiles {
-				output := fmt.Sprintf("::set-output name=runtime-placeholder-files::%s", strings.Join(runtimeVariableFiles, ","))
-				if _, err = cmd.OutOrStdout().Write([]byte(output)); err != nil {
-					return err
+				filePath, present := os.LookupEnv("GITHUB_OUTPUT")
+				if present {
+					f, err := os.OpenFile(filePath, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0600)
+					if err != nil {
+						return err
+					}
+
+					defer f.Close()
+
+					if _, err = f.WriteString("runtime-placeholder-files=" + strings.Join(runtimeVariableFiles, ",") + "\n"); err != nil {
+						return err
+					}
 				}
 			}
 

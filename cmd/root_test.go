@@ -3,6 +3,7 @@ package cmd
 import (
 	"bytes"
 	"github.com/stretchr/testify/assert"
+	"io"
 	"os"
 	"syscall"
 	"template-renderer/test"
@@ -130,7 +131,12 @@ func TestMissingData(t *testing.T) {
 func TestRuntimeData(t *testing.T) {
 	defer os.RemoveAll(TempPath)
 
+	os.MkdirAll(testDir(t), os.ModePerm)
+	githubOutput, _ := os.CreateTemp(testDir(t), "")
+	defer githubOutput.Close()
+
 	var buffer bytes.Buffer
+	os.Setenv("GITHUB_OUTPUT", githubOutput.Name())
 	rootCmd := NewRootCmd()
 	rootCmd.SetOut(&buffer)
 	rootCmd.SetArgs([]string{"-i", "../test/data/templates", "-o", testDir(t), "-t", ".template5", "--output-runtime-placeholder-files", "--runtime", yamlData1})
@@ -138,7 +144,10 @@ func TestRuntimeData(t *testing.T) {
 	err := rootCmd.Execute()
 
 	test.AssertEqual(t, nil, err)
-	test.AssertEqual(t, "::set-output name=runtime-placeholder-files::../tmp/TestRuntimeData/test.txt", buffer.String())
+	test.AssertEqual(t, "", buffer.String())
+
+	githubOutputData, _ := io.ReadAll(githubOutput)
+	test.AssertEqual(t, "runtime-placeholder-files=../tmp/TestRuntimeData/test.txt\n", string(githubOutputData))
 
 	file, err := os.ReadFile(testDir(t) + "/test.txt")
 	test.AssertEqual(t, nil, err)
